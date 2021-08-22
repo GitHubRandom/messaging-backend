@@ -1,6 +1,7 @@
 const PORT = process?.env?.PORT || 8000
 const express = require('express')
 const app = express()
+const cookieParser = require('cookie-parser')
 const http = require('http')
 const Mongoose = require('mongoose')
 const server = http.createServer(app)
@@ -14,6 +15,7 @@ Mongoose
         app.use(express.urlencoded({
             extended: true
         }))
+        app.use(cookieParser())
         app.use('/user', require('./routes/user'))
 
         app.get('/', (_, res) => {

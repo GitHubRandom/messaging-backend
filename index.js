@@ -1,3 +1,6 @@
+if (process?.env?.NODE_ENV !== 'production') {
+    require('dotenv').config()
+}
 const PORT = process?.env?.PORT || 8000
 const express = require('express')
 const app = express()
@@ -13,9 +16,7 @@ Mongoose
     .connect(process.env.DATABASE_URI, { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true })
     .then(() => {
         app.use(cors({
-            origin: (origin, callback) => {
-                !origin || origin.includes("netlify.app") ? callback(null, true) : callback(new Error("Origin not allowed"))
-            },
+            origin: true,
             credentials: true,
             methods: "GET,POST,DELETE"
         }))

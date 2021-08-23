@@ -175,7 +175,7 @@ router.post('/login', async (req, res) => {
         // Check password
         if (await bcrypt.compare(password, user.password)) {
             user.auth.loginToken = newToken
-            res.cookie('lt', newToken, { maxAge: 900000, httpOnly: true })
+            res.cookie('lt', newToken, { maxAge: 900000, httpOnly: true, sameSite: "none" })
             return res.status(200).json({
                 status: 200,
                 message: "Login successful"

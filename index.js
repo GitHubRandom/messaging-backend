@@ -10,7 +10,7 @@ const { Server } = require('socket.io')
 const io = new Server(server)
 
 Mongoose
-    .connect('mongodb://localhost:27017/chat', { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true })
+    .connect(process?.env?.MONGODB_URI || 'mongodb://localhost:27017/chat', { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true })
     .then(() => {
         app.use(cors({
             origin: "http://localhost:3000",

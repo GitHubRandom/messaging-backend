@@ -6,16 +6,17 @@ const userSchema = new mongoose.Schema({
     lastName: String,
     email: { type: String, unique: true },
     password: String,
-    verifiedEmail: Boolean,
+    active: Boolean,
     onlineStatus: Boolean,
-    listOfContacts: [String],
+    listOfContacts: [mongoose.Schema.Types.ObjectId],
+    emailVerificationToken: String,
     auth: {
         loginToken: String,
         lastLogin: Date,
         twoFA: Boolean,
         twoFAToken: String
     },
-    settings: {
+    publicInfo: {
         profilePicture: String,
         bio: String
     }

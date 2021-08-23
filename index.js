@@ -10,10 +10,12 @@ const { Server } = require('socket.io')
 const io = new Server(server)
 
 Mongoose
-    .connect(process?.env?.MONGODB_URI || 'mongodb://localhost:27017/chat', { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true })
+    .connect(process.env.DATABASE_URI, { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true })
     .then(() => {
         app.use(cors({
-            origin: "http://localhost:3000",
+            origin: (origin, callback) => {
+                origin.includes("netlify.app") ? callback(null, true) : callback(new Error("Origin not allowed"))
+            },
             credentials: true
         }))
         app.use(express.json())

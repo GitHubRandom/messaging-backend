@@ -16,7 +16,8 @@ Mongoose
             origin: (origin, callback) => {
                 !origin || origin.includes("netlify.app") ? callback(null, true) : callback(new Error("Origin not allowed"))
             },
-            credentials: true
+            credentials: true,
+            methods: "GET,POST,DELETE"
         }))
         app.use(express.json())
         app.use(express.urlencoded({

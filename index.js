@@ -14,7 +14,8 @@ Mongoose
     .then(() => {
         app.use(cors({
             origin: (origin, callback) => {
-                origin.includes("netlify.app") ? callback(null, true) : callback(new Error("Origin not allowed"))
+                console.log(origin)
+                origin.includes("netlify.app") || !origin ? callback(null, true) : callback(new Error("Origin not allowed"))
             },
             credentials: true
         }))

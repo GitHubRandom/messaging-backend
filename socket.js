@@ -47,18 +47,37 @@ const start = server => {
         socket.on('conversation select', async (username, callback) => {
             console.log(`@${socket.user.username} wants to talk with @${username}`)
             // Leave old conversation room
-            if (socket.user.conversation && socket.rooms.has(socket.user.conversation)) {
-                socket.leave(socket.user.conversation)
+            if (socket.user.conversation && socket.user.conversation.username && socket.rooms.has(socket.user.conversation.username)) {
+                socket.leave(socket.user.conversation.username)
             }
             // Join new conversation room
             socket.join(username)
-            socket.user.conversation = username
+            socket.user.conversation = {
+                username
+            }
             if (callback) {
                 const { onlineStatus } = await User.findOne({ userName: username }, { onlineStatus: 1, _id: -1 })
                 callback({
-                    onlineStatus: Boolean(onlineStatus)
+                    onlineStatus: Boolean(onlineStatus),
                 })
             }
+        })
+        // Catch conversation activities
+        socket.on('activity', activity => {
+            /*
+                Catch user's activity and send it to recipient
+                Then register a timeout in case no other activity is sent within 3 seconds
+                For new activities, we clear any timeout registered for activity reset
+            */
+            if (socket.user.conversation && socket.user.conversation.username) {
+                if (socket.user.conversation.activityTimeout) {
+                    clearTimeout(socket.user.conversation.activityTimeout)
+                }
+                socket.to(socket.user.conversation.username).emit('activity', activity)
+            }
+            socket.user.conversation.activityTimeout = setTimeout(() => {
+                socket.to(socket.user.conversation.username).emit('activity', { activity: 'none' })
+            }, 3000)
         })
         socket.on('connnect_error', error => {
             if (error instanceof Error) {

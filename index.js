@@ -9,40 +9,38 @@ const http = require('http')
 const cors = require('cors')
 const Mongoose = require('mongoose')
 const server = http.createServer(app)
-const { Server } = require('socket.io')
-const io = new Server(server)
+const router = require('./routes/user')
 
+// Connecting to DB
 Mongoose
-    .connect(process.env.DATABASE_URI, { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true })
-    .then(() => {
-        app.use(cors({
-            origin: true,
-            credentials: true,
-            methods: "GET,POST,DELETE"
-        }))
-        app.use(express.json())
-        app.use(express.urlencoded({
-            extended: true
-        }))
-        app.use(cookieParser())
-        app.use('/user', require('./routes/user'))
-        app.use('/static', express.static('public'))
+    .connect(process.env.DATABASE_URI, { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true, useFindAndModify: false })
+    .then(mongoose => mongoose.connection.getClient())
 
-        app.get('/', (_, res) => {
-            res.status(200).send("<h1>Coming soon...</h1>")
-        })
+// Fix CORS issues (F*ck CORS!)
+app.use(cors({
+    origin: true,
+    credentials: true,
+    methods: "GET,POST,DELETE"
+}))
 
-        io.on('connection', socket => {
-            console.log('User connected !')
-            socket.on('message', message => {
-                socket.broadcast.emit(message)
-            })
-            socket.on('disconnect', () => {
-                console.log('User disconnected !')
-            })
-        })
+// Middlewares for POST requests data parsing
+app.use(express.json())
+app.use(express.urlencoded({
+    extended: true
+}))
 
-        server.listen(PORT, () => {
-            console.log(`Listening on port ${PORT}`)
-        })
-    })
+app.use(cookieParser())
+app.use('/user', router)
+// Serve static files
+app.use('/static', express.static('public'))
+
+app.get('/', (_, res) => {
+    res.status(200).send("<h1>Coming soon...</h1>")
+})
+
+// Start socket
+require('./socket').start(server)
+
+server.listen(PORT, () => {
+    console.log(`Listening on port ${PORT}`)
+})

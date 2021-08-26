@@ -38,6 +38,7 @@ const start = server => {
                 try {
                     await Message.create({ ...message })
                     socket.to(message.to).emit('message', message)
+                    socket.to(message.to).emit('activity', { activity: 'none' })
                 } catch (error) {
                     console.error(error)
                 }    

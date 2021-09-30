@@ -9,12 +9,17 @@ const http = require('http')
 const cors = require('cors')
 const Mongoose = require('mongoose')
 const server = http.createServer(app)
-const router = require('./routes/user')
+const userRouter = require('./api/v1/user')
+const swaggerUI = require('swagger-ui-express')
+const YAML = require('yamljs')
 
 // Connecting to DB
-Mongoose
-    .connect(process.env.DATABASE_URI, { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true, useFindAndModify: false })
-    .then(mongoose => mongoose.connection.getClient())
+Mongoose.connect(process.env.DATABASE_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useCreateIndex: true,
+    useFindAndModify: false }
+)
 
 // Fix CORS issues (F*ck CORS!)
 app.use(cors({
@@ -30,9 +35,13 @@ app.use(express.urlencoded({
 }))
 
 app.use(cookieParser())
-app.use('/user', router)
+app.use('/v1/user', userRouter)
 // Serve static files
 app.use('/static', express.static('public'))
+
+// Load API docs (OpenAPI/Swagger)
+const swaggerDocument = YAML.load('./docs/openapi.yaml')
+app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerDocument))
 
 app.get('/', (_, res) => {
     res.status(200).send("<h1>Coming soon...</h1>")

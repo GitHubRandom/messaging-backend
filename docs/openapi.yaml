@@ -1,0 +1,282 @@
+openapi: 3.0.0
+info:
+  title: Chat app API
+  version: 1.0.0
+paths:
+  /register:
+    post:
+      summary: Register user
+      description: Add a new user to the database
+      security: []
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: User targeted success message
+        '400':
+          description: No field provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorMessage'
+        '409':
+          description: Conflict caused by a field that should be unique across all users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorMessageWithField'
+        '422':
+          description: Missing parameter(s)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorMessageWithField'
+      parameters:
+        - name: username
+          in: query
+          description: User's username
+          required: true
+          schema:
+            $ref: '#/components/schemas/registerUsernameSchema'
+        - name: firstname
+          description: User's first name
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/registerNameSchema'
+        - name: lastname
+          description: User's last name
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/registerNameSchema'
+        - name: email
+          description: User's email
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: password
+          description: User's password
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/registerPasswordSchema'
+        - name: confirmpassword
+          description: User's password confirmation
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/registerPasswordSchema'
+  /login:
+    post:
+      summary: Login user
+      description: Authenticate user for login token
+      security: []
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: User targeted success message
+                  jwtToken:
+                    type: string
+                    description: JSON Web Token to provide to protected requests
+        '400':
+          description: No credentials specified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorMessage'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorMessage'
+      parameters:
+        - name: Username
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: Password
+          in: query
+          required: true
+          schema:
+            type: string
+  /messages:
+    get:
+      summary: Get user's messages
+      description: Retrieve messages sent between user and a contact
+      responses:
+        '200':
+          description: Retrieved messages successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/messageSchema'
+        '401':
+          description: Trying to retrieve messages with an invalid authentication token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorMessage'
+        '403':
+          description: Trying to retrieve messages without an authentication token
+          content:
+            application/json: 
+              schema:
+                $ref: '#/components/schemas/errorMessage'
+      parameters:
+        - name: from
+          in: query
+          description: Contact username
+          schema:
+            type: string
+  /me:
+    get:
+      summary: Get user's info
+      description: Retrieve public data about user
+      responses:
+        '200':
+          description: Retrieved user's info successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/userPublicInfo'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorMessage'
+  /contacts:
+    get:
+      summary: Get user's contacts
+      description: Retrieve all contacts of user
+      responses:
+        '200':
+          description: This will be always the response if successfully authenticated, as the contacts list contains at least the user himself
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/userPublicInfo'
+        '401':
+          description: Trying to retrieve user contacts with an invalid jwtToken
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorMessage'
+        '403':
+          description: Trying to retrieve user contacts without an authentication token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorMessage'
+    
+servers:
+  - url: https://messaginger.herokuapp.com/v1/
+    description: Production server
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    userPublicInfo:
+      type: object
+      properties:
+        userName:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        publicInfo:
+          type: object
+          properties:
+            profilePicture:
+              type: string
+              description: User's profile picture URL
+            bio:
+              type: string
+              description: User's chosen paragraph to describe himself
+    registerNameSchema:
+      type: string
+      maxLength: 50
+    registerUsernameSchema:
+      type: string
+      maxLength: 50
+      minLength: 3
+    registerPasswordSchema:
+      type: string
+      minLength: 8
+      maxLength: 50
+    errorMessage:
+      type: object
+      properties:
+        message:
+          type: string
+          description: User targeted error message
+    errorMessageWithField:
+      type: object
+      properties:
+        field:
+          type: string
+          description: Name of field with error
+        message:
+          type: string
+          description: User targeted error message
+    messageSchema:
+      type: object
+      properties:
+        from:
+          type: string
+          description: Message sender
+        to:
+          type: string
+          description: Message receiver
+        dateSent:
+          type: string
+          description: Message sending date
+        content:
+          type: string
+          description: Message content (text, image URL, video URL,...)
+        caption:
+          type: string
+          description: Message caption in case its type is captionable
+        read:
+          type: boolean
+          description: Message read status
+        replyTo:
+          type: object
+          properties:
+            content:
+              type: string
+            from:
+              type: string
+            to:
+              type: string
+            caption:
+              type: string

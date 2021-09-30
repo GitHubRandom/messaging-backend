@@ -5,5 +5,5 @@ module.exports = {
         const emailRegEx = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/
         return !!email.match(emailRegEx)
     },
-    validatePassword: password => password.length >= 8
+    validatePassword: password => password.length >= 8 && password.length <= 300
 }

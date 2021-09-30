@@ -4,11 +4,11 @@ if (process?.env?.NODE_ENV !== 'production') {
 
 const express = require('express')
 const router = express.Router()
-const User = require('../models/user')
-const Message = require('../models/message')
+const User = require('../../models/user')
+const Message = require('../../models/message')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const { validateWithMinLength, validateWithMaxLength, validatePassword, validateEmail } = require('../utils/validators')
+const { validateWithMinLength, validateWithMaxLength, validatePassword, validateEmail } = require('../../utils/validators')
 
 const verifyUser = (req, res, next) => {
     const authHeader = req.headers.authorization || ""
@@ -19,8 +19,7 @@ const verifyUser = (req, res, next) => {
         })
     }
     try {
-        const user = jwt.verify(authToken, process.env.JWT_TOKEN)
-        req.user = user
+        req.user = jwt.verify(authToken, process.env.JWT_TOKEN)
         return next()
     } catch (error) {
         console.error(error)
@@ -32,6 +31,12 @@ const verifyUser = (req, res, next) => {
 
 router.post('/register', async (req, res) => {
     var { username, firstname, lastname, email, password, confirmpassword } = req.body || {}
+
+    if (!(email && firstname && lastname && password && username && confirmpassword)) {
+        return res.status(400).json({
+            message: "No data provided"
+        })
+    }
 
     // Validating user name
     if (validateWithMinLength(username, 3)) {
@@ -45,7 +50,7 @@ router.post('/register', async (req, res) => {
     } else {
         return res.status(422).json({
             field: 'username',
-            message: !username ? "You must specify a username" : "Username is too short or too long. Must be between 3 and 50 characters"
+            message: !username ? "You must specify a username" : "Username must be between 3 and 50 characters"
         })
     }
 
@@ -53,7 +58,7 @@ router.post('/register', async (req, res) => {
     if (!validateWithMaxLength(firstname, 50)) {
         return res.status(422).json({
             field: 'firstname',
-            message: !firstname ? "You must specify a first name" : "First name is too long. Must not exceed 50 characters"
+            message: !firstname ? "You must specify a first name" : "First name must not exceed 50 characters"
         })
     }
 
@@ -61,7 +66,7 @@ router.post('/register', async (req, res) => {
     if (!validateWithMaxLength(lastname, 50)) {
         return res.status(422).json({
             field: 'lastname',
-            message: !lastname ? "You must specify a last name" : "Last name is too long. Must not exceed 50 characters"
+            message: !lastname ? "You must specify a last name" : "Last name must not exceed 50 characters"
         })
     }
 
@@ -85,7 +90,7 @@ router.post('/register', async (req, res) => {
     // Validating password
     if (validatePassword(password) && validatePassword(confirmpassword)) {
         // Check if password & confirmpassword match
-        if (password != confirmpassword) {
+        if (password !== confirmpassword) {
             return res.status(422).json({
                 field: 'confirmpassword',
                 message: "Password confirmation must be the same"
@@ -96,7 +101,7 @@ router.post('/register', async (req, res) => {
     } else {
         return res.status(422).json({
             field: 'password',
-            message: !password ? "Please set a password" : "Password is too short. Must be at least 8 characters long."
+            message: !password ? "Please set a password" : "Password must be between 8 and 300 characters long."
         })
     }
 
@@ -206,7 +211,10 @@ router.get('/messages', verifyUser, async (req, res) => {
     }
     // Retrive messages sent by sender or sent by user
     const messages = await Message
-                            .find({ $or: [{ from: sender, to: user }, { to: sender, from: user }] })
+                            .find(
+                                { $or: [{ from: sender, to: user }, { to: sender, from: user }] },
+                                { __v: -1 }
+                            )
                             .sort({ dateSent: 1 })
     if (messages) {
         return res.status(200).json({

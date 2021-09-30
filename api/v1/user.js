@@ -213,7 +213,7 @@ router.get('/messages', verifyUser, async (req, res) => {
     const messages = await Message
                             .find(
                                 { $or: [{ from: sender, to: user }, { to: sender, from: user }] },
-                                { __v: 0 }
+                                { __v: 0, _id: 0 }
                             )
                             .sort({ dateSent: 1 })
     if (messages) {

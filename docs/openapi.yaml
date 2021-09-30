@@ -3,7 +3,7 @@ info:
   title: Chat app API
   version: 1.0.0
 paths:
-  /register:
+  /user/register:
     post:
       summary: Register user
       description: Add a new user to the database
@@ -74,7 +74,7 @@ paths:
           required: true
           schema:
             $ref: '#/components/schemas/registerPasswordSchema'
-  /login:
+  /user/login:
     post:
       summary: Login user
       description: Authenticate user for login token
@@ -116,7 +116,7 @@ paths:
           required: true
           schema:
             type: string
-  /messages:
+  /user/messages:
     get:
       summary: Get user's messages
       description: Retrieve messages sent between user and a contact
@@ -147,7 +147,7 @@ paths:
           description: Contact username
           schema:
             type: string
-  /me:
+  /user/me:
     get:
       summary: Get user's info
       description: Retrieve public data about user
@@ -164,7 +164,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/errorMessage'
-  /contacts:
+  /user/contacts:
     get:
       summary: Get user's contacts
       description: Retrieve all contacts of user

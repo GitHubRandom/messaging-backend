@@ -209,11 +209,11 @@ router.get('/messages', verifyUser, async (req, res) => {
             message: "You must specify the sender"
         })
     }
-    // Retrive messages sent by sender or sent by user
+    // Retrieve messages sent by sender or sent by user
     const messages = await Message
                             .find(
                                 { $or: [{ from: sender, to: user }, { to: sender, from: user }] },
-                                { __v: -1 }
+                                { __v: 0 }
                             )
                             .sort({ dateSent: 1 })
     if (messages) {

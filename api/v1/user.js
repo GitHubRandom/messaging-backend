@@ -6,6 +6,7 @@ const express = require('express')
 const router = express.Router()
 const User = require('../../models/user')
 const Message = require('../../models/message')
+const Invite = require('../../models/invite')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const { validateWithMinLength, validateWithMaxLength, validatePassword, validateEmail } = require('../../utils/validators')
@@ -31,12 +32,6 @@ const verifyUser = (req, res, next) => {
 
 router.post('/register', async (req, res) => {
     var { username, firstname, lastname, email, password, confirmpassword } = req.body || {}
-
-    if (!(email && firstname && lastname && password && username && confirmpassword)) {
-        return res.status(400).json({
-            message: "No data provided"
-        })
-    }
 
     // Validating user name
     if (validateWithMinLength(username, 3)) {
@@ -96,8 +91,6 @@ router.post('/register', async (req, res) => {
                 message: "Password confirmation must be the same"
             })
         }
-        // Encrypting password
-        password = await bcrypt.hash(password, 10)
     } else {
         return res.status(422).json({
             field: 'password',
@@ -107,7 +100,7 @@ router.post('/register', async (req, res) => {
 
     try {
         // Create user and set login token
-        const user = await User.create({
+        await User.create({
             userName: username,
             firstName: firstname,
             lastName: lastname,
@@ -118,16 +111,6 @@ router.post('/register', async (req, res) => {
                 profilePicture: "/static/images/default-picture.png"
             }
         })
-    
-        const token = jwt.sign({
-            user_id: user._id,
-            username
-        }, process.env.JWT_TOKEN, {
-            expiresIn: '3h'
-        })
-        user.listOfContacts = [ { userName: username } ]
-        user.auth = { loginToken: token, twoFA: false, twoFAToken: '' }
-        await user.save()
 
         res.status(201).json({
             message: "User has been successfully registered"
@@ -156,17 +139,16 @@ router.post('/login', async (req, res) => {
                 message: "Invalid credentials"
             })
         }
-        const newToken = jwt.sign({
-            user_id: user._id,
-            username
-        }, process.env.JWT_TOKEN, {
-            expiresIn: '3h'
-        })
-
         // Check password
-        if (await bcrypt.compare(password, user.password)) {
+        if (user.checkPassword(password)) {
+            const newToken = jwt.sign({
+                id: user._id,
+                username
+            }, process.env.JWT_TOKEN, {
+                expiresIn: '3h'
+            })
             user.auth.loginToken = newToken
-            res.cookie('lt', newToken, { maxAge: 1000 * 3600 * 3, secure: true, httpOnly: true, sameSite: "none" })
+            //res.cookie('lt', newToken, { maxAge: 1000 * 3600 * 3, secure: true, httpOnly: true, sameSite: "none" })
             return res.status(200).json({
                 message: "Login successful",
                 jwtToken: newToken
@@ -180,8 +162,8 @@ router.post('/login', async (req, res) => {
 })
 
 router.get('/me', verifyUser, async (req, res) => {
-    const userName = req.user.username
-    const user = await User.findOne({ userName }, { userName: 1, firstName: 1, lastName: 1, publicInfo: 1, _id: 0 })
+    const userID = req.user.id
+    const user = await User.findById(userID, { userName: 1, firstName: 1, lastName: 1, publicInfo: 1, _id: 0 })
     if (!user) {
         return res.status(404).json({
             message: "User not found"
@@ -191,9 +173,9 @@ router.get('/me', verifyUser, async (req, res) => {
 })
 
 router.get('/logout', verifyUser, async (req, res) => {
-    const userName = req.user.username
-    const user = await User.find({ userName })
-    user.token = ''
+    const userID = req.user.id
+    const user = await User.findById(userID)
+    user.auth.loginToken = ''
     await user.save()
     return res.status(200).json({
         message: "Successfully logged out"
@@ -213,10 +195,10 @@ router.get('/messages', verifyUser, async (req, res) => {
     const messages = await Message
                             .find(
                                 { $or: [{ from: sender, to: user }, { to: sender, from: user }] },
-                                { __v: 0, _id: 0 }
+                                { __v: 0 }
                             )
                             .sort({ dateSent: 1 })
-    if (messages) {
+    if (messages.length) {
         return res.status(200).json({
             messages
         })
@@ -228,78 +210,34 @@ router.get('/messages', verifyUser, async (req, res) => {
 })
 
 router.get('/contacts', verifyUser, async (req, res) => {
-    const userName = req.user.username
-    const user = await User.findOne({ userName })
-    const contacts = await User.find(
-        { userName: { $in: user.listOfContacts.map(contact => contact.userName) } },
-        { userName: 1, firstName: 1, lastName: 1, onlineStatus: 1, publicInfo: 1, _id: 0 })
+    const userID = req.user.id
+    const user = await User.findById(userID).populate("listOfContacts.who", User.getPublicProjection())
+    const contacts = user.listOfContacts
     return res.status(200).json({
         contacts
     })
 })
 
-router.post('/contacts', verifyUser, async (req, res) => {
-    // Username of the authenticated user requesting
-    const userName = req.user.username
-    // Username of the contact to add
-    const { contact } = req.body || {}
-    // Fail if no contact supplied
-    if (!contact) {
-        return res.status(422).json({
-            message: "You must specify contact's username to add"
-        })
-    }
+router.get('/invites', verifyUser, async (req, res) => {
     try {
-        // Get user requesting
-        const user = await User.findOne({ userName })
-        // Get contact to add
-        const contactToAdd = await User.findOne({ userName: contact })
-        // Fail if it doesn't exist
-        if (!contactToAdd) {
+        const invites = await Invite.find(
+            { to: req.user.id, accepted: false, refused: false },
+            { seen: 0 }
+        ).populate("to", User.getPublicProjection()).populate("from", User.getPublicProjection())
+        if (invites.length) {
+            Invite.updateMany({ to: req.user.id }, { seen: true })
+            return res.status(200).json({
+                invites
+            })
+        } else {
             return res.status(404).json({
-                message: "Could not find contact"
+                message: "No invite found"
             })
         }
-        // Fail if it's already in user's contacts list
-        if (user.listOfContacts.find(contact => contact.userName === contactToAdd.userName)) {
-            return res.status(409).json({
-                message: "Contact already exists"
-            })
-        }
-        user.listOfContacts.push({
-            userName: contactToAdd.userName
-        })
-        await user.save()
-        return res.status(200).json({
-            message: "Contact added successfully"
-        })
     } catch (error) {
         console.error(error)
         return res.status(500).json({
-            message: "Could not add to contacts"
-        })
-    }
-})
-
-router.delete('/contacts', verifyUser, async (req, res) => {
-    const userName = req.user.username
-    const { contactsUserNames } = res.body || {}
-    if (!contactsUserNames) {
-        return res.status(422).json({
-            message: "You must specify contacts' usernames to delete"
-        })
-    }
-    try {
-        const user = await User.findOne({ userName })
-        user.listOfContacts = user.listOfContacts.filter(contact => !contactsUserNames.includes(contact))
-        await user.save()
-        return res.status(200).json({
-            message: "Removed from contacts successfully"
-        })
-    } catch (error) {
-        console.error(error)
-        return res.status(500).json({
-            message: "Could not remove from contacts"
+            message: "Could not fetch invites"
         })
     }
 })

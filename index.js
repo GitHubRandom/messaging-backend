@@ -48,7 +48,7 @@ app.get('/', (_, res) => {
 })
 
 // Start socket
-require('./socket').start(server)
+require('./socket/index').start(server)
 
 server.listen(PORT, () => {
     console.log(`Listening on port ${PORT}`)

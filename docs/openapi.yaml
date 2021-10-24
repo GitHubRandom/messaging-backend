@@ -37,43 +37,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/errorMessageWithField'
-      parameters:
-        - name: username
-          in: query
-          description: User's username
-          required: true
-          schema:
-            $ref: '#/components/schemas/registerUsernameSchema'
-        - name: firstname
-          description: User's first name
-          in: query
-          required: true
-          schema:
-            $ref: '#/components/schemas/registerNameSchema'
-        - name: lastname
-          description: User's last name
-          in: query
-          required: true
-          schema:
-            $ref: '#/components/schemas/registerNameSchema'
-        - name: email
-          description: User's email
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: password
-          description: User's password
-          in: query
-          required: true
-          schema:
-            $ref: '#/components/schemas/registerPasswordSchema'
-        - name: confirmpassword
-          description: User's password confirmation
-          in: query
-          required: true
-          schema:
-            $ref: '#/components/schemas/registerPasswordSchema'
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                firstname:
+                  type: string
+                lastname:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                confirmpassword:
+                  type: string
+              required:
+                - username
+                - firstname
+                - lastname
+                - email
+                - password
+                - confirmpassword
+
   /user/login:
     post:
       summary: Login user
@@ -105,17 +95,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/errorMessage'
-      parameters:
-        - name: Username
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: Password
-          in: query
-          required: true
-          schema:
-            type: string
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string,
+                password:
+                  type: string
+              required:
+                - username
+                - password
+
   /user/messages:
     get:
       summary: Get user's messages

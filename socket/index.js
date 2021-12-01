@@ -33,8 +33,11 @@ const start = server => {
         )
         // Every connected user joins a room with its username for incoming messages
         socket.join(socket.user.username)
-        // Emit message that user became online
-        socket.to(socket.user.username).emit('user online', socket.user.username)
+        // Emit message that user is online
+        const user = await User.findById(socket.user.id).populate('listOfContacts.who')
+        user.listOfContacts.length && user.listOfContacts.forEach(({ who }) => {
+            if (who && who.onlineStatus) socket.to(who.userName).emit('user online', socket.user.username)
+        })
         // Register signals        
         registerSignals(socket)
     })

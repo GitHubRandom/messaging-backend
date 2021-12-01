@@ -8,6 +8,7 @@ const registerSignals = socket => {
     socket.on('message', async (message, callback) => {
         message.from = socket.user.username
         if (socket.user.conversation && socket.user.conversation.username === message.to) {
+            // Authorized to send message
             try {
                 const createdMessage = await Message.create({ ...message })
                 socket.to(message.to).emit('message', createdMessage)
@@ -36,22 +37,43 @@ const registerSignals = socket => {
     // Catch conversation select & return online status of recipient
     socket.on('conversation select', async (username, callback) => {
         console.log(`@${socket.user.username} wants to talk with @${username}`)
-        // Leave old conversation room
-        if (socket.user.conversation && socket.user.conversation.username && socket.rooms.has(socket.user.conversation.username)) {
-            socket.leave(socket.user.conversation.username)
-        }
+        // Check user and recipient friendship
+        const user = await User.findById(socket.user.id).populate("listOfContacts.who")
+        if (!(user.listOfContacts.some(contact => contact.who && contact.who.userName === username ))) {
+            return callback({
+                success: false,
+                message: "Unauthorized"
+            })
+        }        
         // Join new conversation room
-        socket.join(username)
         socket.user.conversation = {
             username
         }
+        socket.to(username).emit('seen', socket.user.username)
+        // Set all conversation messages as seen
+        await Message.updateMany(
+            { to: socket.user.username, from: socket.user.conversation.username },
+            { read: true }
+        )
         if (callback) {
             const { onlineStatus } = await User.findOne({ userName: username }, { onlineStatus: 1, _id: -1 })
             callback({
+                success: true,
                 onlineStatus: Boolean(onlineStatus),
             })
         }
     })
+
+    // Catch message seen event
+    socket.on('seen', async () => {
+        // Set all conversation messages as seen
+        await Message.updateMany(
+            { to: socket.user.username, from: socket.user.conversation.username },
+            { read: true }
+        )
+        socket.to(socket.user.conversation.username).emit('seen', socket.user.username)
+    })
+
 
     // Catch conversation activities
     socket.on('activity', activity => {
@@ -115,7 +137,15 @@ const registerSignals = socket => {
             await user.save()
             callback({
                 success: true,
-                message: "Invite sent successfully"
+                message: "Invite sent successfully",
+                contact: {
+                    who: {
+                        userName: whoUser.userName,
+                        firstName: whoUser.firstName,
+                        lastName: whoUser.lastName,
+                        publicInfo: whoUser.publicInfo
+                    }
+                }
             })
         })
     })
@@ -130,35 +160,36 @@ const registerSignals = socket => {
                     message: "Unauthorized"
                 })
             }
-            // Respond to invite
             if (response === "accept") {
+                const sender = await User.findById(invite.from, User.getPublicProjection())
+                await User.updateOne(
+                    { _id: invite.to, "listOfContacts.who": { $ne: invite.from } },
+                    { $push: { listOfContacts: { who: invite.from } } },
+                    function(error, affected) {
+                        console.log(error)
+                        console.log(affected)
+                    }
+                )
                 invite.accepted = true
                 invite.refused = false
+                await invite.save()
+                return callback({
+                    success: true,
+                    contact: { who: sender }
+                })
             } else if (response === "refuse") {
                 invite.accepted = false
                 invite.refused = true
+                await invite.save()
+                callback({
+                    success: true
+                })
             } else {
                 return callback({
                     success: false,
                     message: "Invalid response"
                 })
             }
-            await invite.save()
-            if (invite.accepted) {
-                const sender = await User.findById(invite.from, User.getPublicProjection())
-                const contact = await User.findByIdAndUpdate(
-                    invite.to,
-                    { $push: { listOfContacts: { who: sender._id } } },
-                    { new: true }
-                )
-                return callback({
-                    success: true,
-                    contact: { _id: contact.listOfContacts.at(-1)._id, who: sender }
-                })
-            }
-            callback({
-                success: true
-            })
         } catch (error) {
             console.error(error)
             callback({
@@ -175,7 +206,11 @@ const registerSignals = socket => {
     })
 
     socket.on('disconnect', async () => {
-        socket.to(socket.user.username).emit('user offline', socket.user.username)
+        const user = await User.findById(socket.user.id).populate('listOfContacts.who')
+        user.listOfContacts.forEach(({ who }) => {
+            if (who && who.onlineStatus) socket.to(who.userName).emit('user offline', socket.user.username)
+        })
+        socket.leave(socket.user.username)
         // update user's online status
         await User.findOneAndUpdate(
             { userName: socket.user.username },

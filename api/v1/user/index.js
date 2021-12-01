@@ -4,31 +4,12 @@ if (process?.env?.NODE_ENV !== 'production') {
 
 const express = require('express')
 const router = express.Router()
-const User = require('../../models/user')
-const Message = require('../../models/message')
-const Invite = require('../../models/invite')
-const bcrypt = require('bcryptjs')
+const User = require('../../../models/user')
+const Message = require('../../../models/message')
+const Invite = require('../../../models/invite')
 const jwt = require('jsonwebtoken')
-const { validateWithMinLength, validateWithMaxLength, validatePassword, validateEmail } = require('../../utils/validators')
-
-const verifyUser = (req, res, next) => {
-    const authHeader = req.headers.authorization || ""
-    const authToken = authHeader.split(' ')[1]
-    if (!authToken) {
-        return res.status(403).json({
-            message: "You are not authenticated, please login"
-        })
-    }
-    try {
-        req.user = jwt.verify(authToken, process.env.JWT_TOKEN)
-        return next()
-    } catch (error) {
-        console.error(error)
-        return res.status(401).json({
-            message: "Invalid token"
-        })
-    }
-}
+const verifyUser = require('./authMiddleware')
+const { validateWithMinLength, validateWithMaxLength, validatePassword, validateEmail } = require('../../../utils/validators')
 
 router.post('/register', async (req, res) => {
     var { username, firstname, lastname, email, password, confirmpassword } = req.body || {}
@@ -105,11 +86,7 @@ router.post('/register', async (req, res) => {
             firstName: firstname,
             lastName: lastname,
             email,
-            password,
-            active: false,
-            publicInfo: {
-                profilePicture: "/static/images/default-picture.png"
-            }
+            password
         })
 
         res.status(201).json({
@@ -211,7 +188,9 @@ router.get('/messages', verifyUser, async (req, res) => {
 
 router.get('/contacts', verifyUser, async (req, res) => {
     const userID = req.user.id
-    const user = await User.findById(userID).populate("listOfContacts.who", User.getPublicProjection())
+    const user = await User.findById(userID)
+                    .populate("listOfContacts.who", User.getPublicProjection())
+                    .populate("listOfContacts.lastMessage")
     const contacts = user.listOfContacts
     return res.status(200).json({
         contacts
@@ -241,5 +220,7 @@ router.get('/invites', verifyUser, async (req, res) => {
         })
     }
 })
+
+router.use('/settings', require('./settings'))
 
 module.exports = router

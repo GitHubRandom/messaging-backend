@@ -37,7 +37,7 @@ app.use(express.urlencoded({
 app.use(cookieParser())
 app.use('/v1/user', userRouter)
 // Serve static files
-app.use('/static', express.static('public'))
+app.use('/static', express.static('files'))
 
 // Load API docs (OpenAPI/Swagger)
 const swaggerDocument = YAML.load('./docs/openapi.yaml')

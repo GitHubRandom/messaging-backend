@@ -41,12 +41,14 @@ messageSchema.pre('save', function(next) {
 })
 
 messageSchema.post('save', async message => {
+    const userFrom = await User.findOne({ userName: message.from })
+    const userTo = await User.findOne({ userName: message.to })
     await User.updateOne({ userName: message.to },
-        { $set: { "listOfContacts.$[contact].lastMessaged": message.dateSent } },
-        { arrayFilters: [ { "contact.userName": message.from } ] })
+        { $set: { "listOfContacts.$[contact].lastMessage": message._id } },
+        { arrayFilters: [ { "contact.who": userFrom._id } ] })
     await User.updateOne({ userName: message.from },
-        { $set: { "listOfContacts.$[contact].lastMessaged": message.dateSent } },
-        { arrayFilters: [ { "contact.userName": message.to } ] })    
+        { $set: { "listOfContacts.$[contact].lastMessage": message._id } },
+        { arrayFilters: [ { "contact.who": userTo._id } ] })    
 })
 
 module.exports = mongoose.model('Message', messageSchema)

@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema({
         match: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/
     },
     password: String,
-    active: { type: Boolean, default: true },
+    active: { type: Boolean, default: false },
     onlineStatus: { type: Boolean, default: false },
     listOfContacts: [{
         who: {
@@ -36,7 +36,8 @@ const userSchema = new mongoose.Schema({
         lastMessage: {
             type: mongoose.SchemaTypes.ObjectId,
             ref: 'Message'
-        }
+        },
+        _id: false
     }],
     emailVerificationToken: String,
     auth: {
@@ -46,8 +47,8 @@ const userSchema = new mongoose.Schema({
         twoFAToken: { type: String, default: "" }
     },
     publicInfo: {
-        profilePicture: String,
-        bio: { type: String, maxLength: 100 }
+        profilePicture: { type: String, default: "/static/public/images/default-picture.png" },
+        bio: { type: String, maxLength: 100, default: "" }
     }
 });
 

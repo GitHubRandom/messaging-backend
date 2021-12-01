@@ -119,4 +119,4 @@ dist
 .pnp.*
 
 # Users files
-files
+files/private

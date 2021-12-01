@@ -103,7 +103,7 @@ paths:
               type: object
               properties:
                 username:
-                  type: string,
+                  type: string
                 password:
                   type: string
               required:
@@ -152,6 +152,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/userPublicInfo'
+        '401':
+          description: Trying to retrieve user info with an invalid jwtToken
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorMessage'
+        '403':
+          description: Trying to retrieve user info without an authentication token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorMessage'
         '404':
           description: User not found
           content:
@@ -164,7 +176,7 @@ paths:
       description: Retrieve all contacts of user
       responses:
         '200':
-          description: This will be always the response if successfully authenticated, as the contacts list contains at least the user himself
+          description: This should be always the response if successfully authenticated, even empty
           content:
             application/json:
               schema:
@@ -183,6 +195,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/errorMessage'
+  /user/invites:
+    get:
+      summary: Get user's incoming invites
+      description: Retrieve all incoming invites of user
+      responses:
+        '200':
+          description: User has indeed incoming invites
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/invite'
+        '404':
+          description: User has no incoming invites
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorMessage'
+        '401':
+          description: Trying to retrieve user invites with an invalid jwtToken
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorMessage'
+        '403':
+          description: Trying to retrieve user invites without an authentication token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorMessage'
     
 servers:
   - url: https://messaginger.herokuapp.com/v1/
@@ -196,6 +239,21 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    invite:
+      type: object
+      properties:
+        from:
+          type: string
+        to:
+          type: string
+        dateSent:
+          type: string
+        seen:
+          type: boolean
+        accepted:
+          type: boolean
+        refused:
+          type: boolean
     userPublicInfo:
       type: object
       properties:

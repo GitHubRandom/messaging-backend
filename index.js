@@ -1,6 +1,9 @@
 if (process?.env?.NODE_ENV !== 'production') {
     require('dotenv').config()
 }
+// Setup global variable with files path
+global.rootPath = __dirname
+
 const PORT = process?.env?.PORT || 8000
 const express = require('express')
 const app = express()

@@ -5,7 +5,7 @@ const fs = require("fs")
 const verifyUser = require('./authMiddleware')
 const User = require('../../../models/user')
 
-const filesPath = "/home/ritzy/Documents/Messaging Backend/files"
+const filesPath = global.rootPath + "/files"
 const extensions = {
     "image/jpeg": ".jpeg",
     "image/jpg": ".jpg",
@@ -76,44 +76,6 @@ router.post('/account', verifyUser, async (req, res) => {
         })
     })
 
-    /*if (profile_picture) {
-        avatarUpload(req, res, function (error) {
-            if (error) {
-                console.log(error)
-                if (error.code === "LIMIT_FILE_SIZE") {
-                    return res.status(400).json({
-                        field: 'profile_picture',
-                        message: "File is too large. Must be less than 2MB."
-                    })
-                }
-                return res.status(500).json({
-                    message: "An error occured while uploading file"
-                })
-            }
-            console.log("File uploaded")
-        })
-    } else if (!username && !firstname && !lastname && !bio) {
-        return res.status(400).json({
-            message: "No data sent"
-        })
-    }    
-
-    
-
-    return res.status(200).json({
-        message: "Changes saved successfully"
-    })
-
-    /*const user = await User.findById(req.user.id)
-    if (username) {
-        user.userName = username
-    }
-    if (firstname) {
-        user.firstName = firstname
-    }
-    if (lastname) {
-        user.lastName = lastname
-    }*/
 })
 
 module.exports = router

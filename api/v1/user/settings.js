@@ -37,10 +37,10 @@ const avatarUpload = multer({
     }
 }).single("profile_picture")
 
-router.post('/account', verifyUser, async (req, res) => {
-
+router.post('/avatar', verifyUser, async (req, res) => {
     avatarUpload(req, res, async function(error) {
         if (error) {
+            console.error(error)
             if (error instanceof multer.MulterError && error.code === "LIMIT_FILE_SIZE") {
                 return res.status(422).json({
                     field: 'profile_picture',
@@ -49,33 +49,46 @@ router.post('/account', verifyUser, async (req, res) => {
             }
             return res.status(500).json({
                 field: 'profile_picture',
-                message: error.message || "An error occured while processing avatar image"
+                message: "An error occured while processing avatar image"
             })
         }
-
-        const { username, firstname, lastname, bio } = req.body
-        const user = await User.findById(req.user.id)
-        if (req.file) {
-            user.publicInfo.profilePicture = "/static" + req.file.path.replace(filesPath, "")
+        if (!req.file) {
+            return res.status(400).json({
+                message: "No image provided"
+            })
         }
-        if (username) {
-            user.userName = username
-        }
-        if (firstname) {
-            user.firstName = firstname
-        }
-        if (lastname) {
-            user.lastName = lastname
-        }
-        if (bio) {
-            user.publicInfo.bio = bio
-        }
-        await user.save()
+        await User.findByIdAndUpdate(req.user.id, { $set: { "publicInfo.profilePicture": "/static" + req.file.path.replace(filesPath, "") } })
         return res.status(200).json({
             message: "Changes saved successfully"
         })
     })
 
+})
+
+router.post('/account', verifyUser, async (req, res) => {
+    const { username, firstname, lastname, bio } = req.body
+    if (!username && !firstname && !lastname && !bio) {
+        return res.status(400).json({
+            message: "No data provided"
+        })
+    }
+    const user = await User.findById(req.user.id)
+    if (username) {
+        user.userName = username
+    }
+    if (firstname) {
+        user.firstName = firstname
+    }
+    if (lastname) {
+        user.lastName = lastname
+    }
+    if (bio) {
+        user.publicInfo.bio = bio
+    }
+    await user.save()
+    return res.status(200).json({
+        message: "Changes saved successfully"
+    })
 })
 
 module.exports = router

@@ -28,7 +28,7 @@ Mongoose.connect(process.env.DATABASE_URI, {
 app.use(cors({
     origin: true,
     credentials: true,
-    methods: "GET,POST,DELETE"
+    //methods: "GET,DELETE"
 }))
 
 // Middlewares for POST requests data parsing

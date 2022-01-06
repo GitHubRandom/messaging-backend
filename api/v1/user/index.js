@@ -125,7 +125,7 @@ router.post('/login', async (req, res) => {
                 expiresIn: '3h'
             })
             user.auth.loginToken = newToken
-            //res.cookie('lt', newToken, { maxAge: 1000 * 3600 * 3, secure: true, httpOnly: true, sameSite: "none" })
+            res.cookie('lt', newToken, { maxAge: 1000 * 3600 * 3, secure: true, httpOnly: true, sameSite: "none" })
             return res.status(200).json({
                 message: "Login successful",
                 jwtToken: newToken

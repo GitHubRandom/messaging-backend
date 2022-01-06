@@ -1,3 +1,18 @@
-# Messaginger - A Backend system in Node.js for instant messaging
+# Messaginger
 
-This is a personal effort to create a fully fledged messaging system ready to deploy and customize. Using Sockets, Node.js and MongoDB, it includes user system, instant messaging and contact invite system. More features are planned notably E2E encryption, rich content support and more.
+A backend implementation for an instant messaging app.
+
+## Tech used
+- **Backend:** Node.js/Express
+- **Frontend:** React (Separate repository)
+- **Database:** MongoDB
+
+## Features
+- [x] Basic texting
+- [x] Invite system
+- [ ] End-to-End encryption
+- [x] Inline maths support
+- [ ] Images & videos
+- [ ] Documents
+- [ ] Audio
+- [ ] Text formatting support

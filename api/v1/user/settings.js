@@ -5,6 +5,9 @@ const fs = require("fs")
 const verifyUser = require('./authMiddleware')
 const User = require('../../../models/user')
 
+const profilePictureSizeLimit = parseInt(process.env.PROFILE_PICTURE_SIZE_LIMIT)
+const profilePictureSizeLimitMB = profilePictureSizeLimit / (1024)*(1024)
+
 const filesPath = global.rootPath + "/files"
 const extensions = {
     "image/jpeg": ".jpeg",
@@ -26,7 +29,7 @@ const avatarUpload = multer({
         }
     }),
     limits: {
-        fileSize: 2*1024*1024
+        fileSize: profilePictureSizeLimit
     },
     fileFilter: (req, file, callback) => {
         if (Object.keys(extensions).includes(file.mimetype)) {
@@ -44,7 +47,7 @@ router.post('/avatar', verifyUser, async (req, res) => {
             if (error instanceof multer.MulterError && error.code === "LIMIT_FILE_SIZE") {
                 return res.status(422).json({
                     field: 'profile_picture',
-                    message: "File must not exceed 2MB"
+                    message: `File must not exceed ${profilePictureSizeLimitMB}MB`
                 })
             }
             return res.status(500).json({

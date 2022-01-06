@@ -26,9 +26,8 @@ Mongoose.connect(process.env.DATABASE_URI, {
 
 // Fix CORS issues (F*ck CORS!)
 app.use(cors({
-    origin: true,
-    credentials: true,
-    //methods: "GET,DELETE"
+    origin: "https://determined-pare-7881d1.netlify.app",
+    credentials: true
 }))
 
 // Middlewares for POST requests data parsing

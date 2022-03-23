@@ -1,5 +1,7 @@
 # Messaginger
 
+![](screenshots/1.png)
+
 A backend implementation for an instant messaging app.
 
 ## Tech used

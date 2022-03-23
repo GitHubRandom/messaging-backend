@@ -24,9 +24,8 @@ Mongoose.connect(process.env.DATABASE_URI, {
     useFindAndModify: false }
 )
 
-// Fix CORS issues (F*ck CORS!)
 app.use(cors({
-    origin: "https://determined-pare-7881d1.netlify.app",
+    origin: process.env.NODE_ENV === 'production' ? "https://determined-pare-7881d1.netlify.app" : true,
     credentials: true
 }))
 
